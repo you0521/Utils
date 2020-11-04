@@ -1,86 +1,126 @@
-package com.liys.dialoglib;
+package com.cumulus.jcy.expandtextview2;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.util.DisplayMetrics;
+import android.view.View;
+import android.view.WindowManager;
 
 /**
- * 获取屏幕信息 工具类
- * @author liys
- * @version 1.0  2017/07/29
+ * 创建者：  jcy
+ * 日期：9:11
+ * 时间：2019/3/27
+ * 内容：
  */
+
 public class ScreenUtils {
-    /** 1.获取屏幕宽度(单位px) */
-    public static int getWidthPixels(Context context){
-        return context.getResources().getDisplayMetrics().widthPixels;
+    private ScreenUtils()
+    {
+		/* cannot be instantiated */
+        throw new UnsupportedOperationException("cannot be instantiated");
     }
-    /** 2.获取屏幕高度(单位px) */
-    public static int getHeightPixels(Context context){
-        return context.getResources().getDisplayMetrics().heightPixels;
+
+    /**
+     * 获得屏幕高度
+     *
+     * @param context
+     * @return
+     */
+    public static int getScreenWidth(Context context)
+    {
+        WindowManager wm = (WindowManager) context
+                .getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(outMetrics);
+        return outMetrics.widthPixels;
     }
-    /** 3.获取屏幕密度 （0.75 / 1.0 / 1.5） 参考网址;http://blog.sina.com.cn/s/blog_74c22b210100s0kw.html */
-    public static float getHeightPixels(Activity activity){
-        DisplayMetrics metric = new DisplayMetrics();
-        activity.getWindowManager().getDefaultDisplay().getMetrics(metric);
-        return metric.density;
+
+    /**
+     * 获得屏幕宽度
+     *
+     * @param context
+     * @return
+     */
+    public static int getScreenHeight(Context context)
+    {
+        WindowManager wm = (WindowManager) context
+                .getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(outMetrics);
+        return outMetrics.heightPixels;
     }
-    /** 4. 获取状态栏高度 (单位px)*/
-    public static int getStatusBarHeight(Context context) {
-        int result = 0;
-        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen","android");
-        if (resourceId > 0) {
-            result = context.getResources().getDimensionPixelSize(resourceId);
+
+    /**
+     * 获得状态栏的高度
+     *
+     * @param context
+     * @return
+     */
+    public static int getStatusHeight(Context context)
+    {
+
+        int statusHeight = -1;
+        try
+        {
+            Class<?> clazz = Class.forName("com.android.internal.R$dimen");
+            Object object = clazz.newInstance();
+            int height = Integer.parseInt(clazz.getField("status_bar_height")
+                    .get(object).toString());
+            statusHeight = context.getResources().getDimensionPixelSize(height);
+        } catch (Exception e)
+        {
+            e.printStackTrace();
         }
-        return result;
+        return statusHeight;
     }
 
     /**
-     * 是否竖屏
-     * @param context
+     * 获取当前屏幕截图，包含状态栏
+     *
+     * @param activity
      * @return
      */
-    public static boolean isPortrait(Context context) {
-        Configuration mConfiguration = context.getResources().getConfiguration(); //获取设置的配置信息
-        return mConfiguration.orientation == mConfiguration.ORIENTATION_PORTRAIT;
+    public static Bitmap snapShotWithStatusBar(Activity activity)
+    {
+        View view = activity.getWindow().getDecorView();
+        view.setDrawingCacheEnabled(true);
+        view.buildDrawingCache();
+        Bitmap bmp = view.getDrawingCache();
+        int width = getScreenWidth(activity);
+        int height = getScreenHeight(activity);
+        Bitmap bp = null;
+        bp = Bitmap.createBitmap(bmp, 0, 0, width, height);
+        view.destroyDrawingCache();
+        return bp;
+
     }
 
     /**
-     * 是否横屏
-     * @param context
+     * 获取当前屏幕截图，不包含状态栏
+     *
+     * @param activity
      * @return
      */
-    public static boolean isLandscape(Context context) {
-        Configuration mConfiguration = context.getResources().getConfiguration(); //获取设置的配置信息
-        return mConfiguration.orientation == mConfiguration.ORIENTATION_LANDSCAPE;
-    }
+    public static Bitmap snapShotWithoutStatusBar(Activity activity)
+    {
+        View view = activity.getWindow().getDecorView();
+        view.setDrawingCacheEnabled(true);
+        view.buildDrawingCache();
+        Bitmap bmp = view.getDrawingCache();
+        Rect frame = new Rect();
+        activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
+        int statusBarHeight = frame.top;
 
-    /**
-     * 强制设置为竖屏
-     * @param activity
-     */
-    public static void setPortrait(Activity activity) {
-        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    }
+        int width = getScreenWidth(activity);
+        int height = getScreenHeight(activity);
+        Bitmap bp = null;
+        bp = Bitmap.createBitmap(bmp, 0, statusBarHeight, width, height
+                - statusBarHeight);
+        view.destroyDrawingCache();
+        return bp;
 
-    /**
-     * 强制设置为横屏
-     * @param activity
-     */
-    public static void setLandscape(Activity activity) {
-        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-    }
-
-    /**
-     * 判断当前设备是手机还是平板，代码来自 Google I/O App for Android
-     * @param context
-     * @return 平板返回 True，手机返回 False
-     */
-    public static boolean isPad(Context context) {
-        return (context.getResources().getConfiguration().screenLayout
-                & Configuration.SCREENLAYOUT_SIZE_MASK)
-                >= Configuration.SCREENLAYOUT_SIZE_LARGE;
     }
 
 }
